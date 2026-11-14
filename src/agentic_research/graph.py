@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langgraph.graph import StateGraph, START, END
 
-from .agents import planner_agent, research_agent, writer_agent, editor_agent
+from .agents import planner_agent, research_agent, writer_agent, editor_agent, should_review_again
 from .state import ResearchState
 
 
@@ -19,6 +19,7 @@ def build_workflow():
     graph.add_edge("planner", "research")
     graph.add_edge("research", "writer")
     graph.add_edge("writer", "editor")
-    graph.add_edge("editor", END)
+    # Bounded review loop: MAX_EDITOR_REVISIONS controls how many editor passes run.
+    graph.add_conditional_edges("editor", should_review_again, {"editor": "editor", "finish": END})
 
     return graph.compile()

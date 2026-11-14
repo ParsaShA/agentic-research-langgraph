@@ -115,11 +115,13 @@ Requirements:
 def editor_agent(state: ResearchState) -> dict:
     """Critique and improve the draft; keep review bounded to avoid endless loops."""
     llm = build_llm(temperature=0.1)
+    # On a second pass, review the previous edited version instead of the original draft.
+    current = state.get('final_report') or state.get('draft', '')
     prompt = f"""Review and edit the following research report.
 Topic: {state['topic']}
 Evidence: {json.dumps(state.get('research_results', {}), ensure_ascii=False)}
 Draft:
-{state.get('draft', '')}
+{current}
 
 Check factual support, structure, clarity, repetition, and whether sources are represented honestly.
 Do not add unsupported facts or invented references. Return the complete improved report only.
@@ -141,6 +143,6 @@ Do not add unsupported facts or invented references. Return the complete improve
 def should_review_again(state: ResearchState) -> str:
     """Conditional route used by LangGraph to cap editor iterations."""
     # One review is normally enough. The setting allows a second pass if desired.
-    if state.get("revision_count", 0) < MAX_EDITOR_REVISIONS:
+    if int(state.get("revision_count", 0)) < MAX_EDITOR_REVISIONS:
         return "editor"
     return "finish"
